@@ -1,0 +1,4 @@
+opendelta==0.3.2
+mkl-random==1.2.2
+mkl-service==2.4.0
+pip==22.2.2

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 logger = logging.getLogger(__name__)
 
-main_dir = "/root/xtlv/data/sora_datasets/glue_datasets_from_dn"
+main_dir = "D:/LLM/rte-20240705T225031Z-001/"
 
 class AbstractTask(abc.ABC):
     name = NotImplemented
@@ -37,8 +37,7 @@ class AbstractTask(abc.ABC):
         self.split_train_to_make_test = self.name in self.large_data_without_all_splits
     
     def load_dataset(self, split):
-        tmp = datasets.load_from_disk(f"{main_dir}/{self.name}")
-
+        tmp = datasets.load_from_disk(f"{main_dir}{self.name}")
         return tmp[split]
 
     def check_n_obs(self, n_obs, total_size):

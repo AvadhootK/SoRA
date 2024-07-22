@@ -1,8 +1,21 @@
 from transformers import AdamW 
-from torch.optim import Optimizer
 import torch
 import math
 import numpy as np
+
+# AdamW - Standard Adam optimizer with weight decay (L2 regularization)
+# Used to optimize Lora_A and Lora_B matrices in LoRA method
+
+# SparseAdam Optimizer (extends AdamW optimizer) - applies sparse regularization to model parameters (gate unit parameters)
+# Adds sparse regularization (to encourage sparsity in model params) & supports lambda scheduling to gradually increase sparsity regularization over time
+
+# Basic Working of SparseAdamW Optimizer:
+# For simplicity, consider sparse_lambda * learning rate as "A".
+# 1. Adjust parameter values based on gradient updates. 
+# 2. If sparse_lambda > 0, apply thresholding to parameters to promote sparsity:
+#    - Parameter values > A -> Decreased by A
+#    - Parameter values < -A -> Increased by A
+#    - Parameter values with absolute values < A -> Set to 0
 
 class SparseAdamW(AdamW):
     def __init__(self,
@@ -19,26 +32,31 @@ class SparseAdamW(AdamW):
         self.lambda_schedule = lambda_schedule
         self._build_lambda_list(max_lambda, lambda_num)
     
+    # constructs a list of lambda values to update sparse_lambda, based on a specified schedule (Linear or Log Linear)
     def _build_lambda_list(self, max_lambda, lambda_num):
         if self.lambda_schedule is None:
             self._lambdas = None
             return
         if isinstance(self.lambda_schedule, list):
             self._lambdas = self.lambda_schedule
+        # generate lambda_num of equally spaced values between sparse_lambda and max_lambda
         if self.lambda_schedule == "linear":
             assert max_lambda is not None and lambda_num is not None, print(f"when using linear schedule, max_lambda and lambda_num must be provided, but got ({max_lambda} and {lambda_num})")
             self._lambdas = np.linspace(self.sparse_lambda, max_lambda, lambda_num)
+        # generate lambda_num values equally spaced in log space between exponentiated sparse_lambda and exponentiated max_lambda
         elif self.lambda_schedule == "log_linear":
             assert max_lambda is not None and lambda_num is not None, print(f"when using log_linear schedule, max_lambda and lambda_num must be provided, but got ({max_lambda} and {lambda_num})")
             self._lambdas = np.log(np.linspace(np.exp(self.sparse_lambda), np.exp(max_lambda), lambda_num))
         else:
             raise NotImplementedError
     
+    # method to update the sparse_lambda parameter to the next value in the precomputed list of lambda values
     def step_lambda(self):
         if self._lambdas is None:
             print("no lambda schedule is specified, do nothing")
             return
         else:
+            # if more lambda values available, increment index by 1 and select next lambda value from precomputed list
             if self.lambda_idx < len(self._lambdas) - 1:
                 self.lambda_idx += 1
                 self.sparse_lambda = self._lambdas[self.lambda_idx]
@@ -46,7 +64,7 @@ class SparseAdamW(AdamW):
             else:
                 print(f"reach end of self._lambdas, keep using lambda={self.sparse_lambda}")
 
-    
+    # custom step method for optimizer, based on the Adam optimizer, with additional handling for sparse regularization
     def step(self, closure = None):
         """
         Performs a single optimization step.
@@ -58,6 +76,7 @@ class SparseAdamW(AdamW):
             loss = closure()
 
         for group in self.param_groups:
+            # iterate over parameters in each group, skip no gradient params and sparse gradient
             for p in group["params"]:
                 if p.grad is None:
                     continue
@@ -65,6 +84,7 @@ class SparseAdamW(AdamW):
                 if grad.is_sparse:
                     raise RuntimeError("Adam does not support sparse gradients, please consider SparseAdam instead")
 
+                # Initialize the state dictionary for each parameter
                 state = self.state[p]
 
                 # State initialization
@@ -109,6 +129,7 @@ class SparseAdamW(AdamW):
                     to_add = to_add + (-group["lr"] * group["weight_decay"]) * p.data
                 p.data.add_(to_add) 
 
+                # apply thresholding to parameters to promote sparsity 
                 if self.sparse_lambda > 0:
                     p.data[p.data > self.sparse_lambda * group["lr"]] -= self.sparse_lambda * group["lr"]
                     p.data[p.data < -self.sparse_lambda * group["lr"]] += self.sparse_lambda * group["lr"]

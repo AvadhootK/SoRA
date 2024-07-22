@@ -1,18 +1,21 @@
 from typing import Optional, Union
-
-from opendelta.utils.signature import get_arg_names, get_arg_names_inside_func
+from opendelta.utils.signature import get_arg_names_inside_func
 from opendelta.utils.name_based_addressing import *
 from opendelta.basemodel import DeltaBase
 import torch.nn as nn
 from opendelta import BaseDeltaConfig
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import torch
 
 """
 implementation of sparse lora
 """
 
+# modified linear transformation layer integrating low-rank adaptation for parameter efficiency
+# contains:
+# 1. dropout for regularization 
+# 2. gating mechanism to adjust the contribution of the low-rank adaptation
 class LowRankLinear(nn.Module):
     #  ------------------------------------------------------------------------------------------
     #  Copyright (c) Microsoft Corporation. All rights reserved.
@@ -43,6 +46,7 @@ class LowRankLinear(nn.Module):
             nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
             nn.init.zeros_(self.lora_B)
 
+    # y = dropout(x)AT . g . BT . scaling factor
     def forward(self, x):
         return ((self.lora_dropout(x) @ self.lora_A.T).mul(self.gate) @ self.lora_B.T) * self.scaling
 

@@ -2,7 +2,7 @@ from collections import OrderedDict
 import collections
 import abc
 import functools
-from selectors import EpollSelector
+# from selectors import EpollSelector
 from typing import Callable, List, Mapping
 import datasets
 import logging
@@ -24,7 +24,7 @@ import warnings
 
 from .processor import AbstractTask
 
-main_dir = "/root/xtlv/data/sora_datasets/glue_datasets_from_dn"
+main_dir = "D:/LLM/rte-20240705T225031Z-001/"
 
 ##GLUE
 class COLA(AbstractTask):

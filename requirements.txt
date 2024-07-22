@@ -53,8 +53,6 @@ loralib==0.1.0
 matplotlib==3.7.1
 matplotlib-inline==0.1.6
 mkl-fft==1.3.1
-mkl-random==1.2.2
-mkl-service==2.4.0
 more-itertools==9.0.0
 multidict==6.0.2
 multiprocess==0.70.14
@@ -62,9 +60,8 @@ munkres==1.1.4
 nest-asyncio==1.5.5
 nltk==3.7
 numexpr==2.8.4
-numpy==1.23.4
+numpy==1.22.3
 nvidia-ml-py3==7.352.0
-opendelta==0.3.2
 oss2==2.15.0
 packaging==21.3
 pandas==1.5.3
@@ -73,7 +70,7 @@ pathtools==0.1.2
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==9.2.0
-pip==22.2.2
+
 ply==3.11
 prompt-toolkit==3.0.20
 protobuf==4.22.3
@@ -106,7 +103,6 @@ setproctitle==1.3.2
 setuptools==65.5.0
 sip==6.6.2
 six==1.16.0
-sklearn==0.0.post1
 smmap==5.0.0
 stack-data==0.2.0
 tensorboardX==2.6.1
